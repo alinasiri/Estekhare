@@ -34,87 +34,144 @@ export default function HomeScreen() {
   }, []);
 
   function generateNumber() {
-    const now = new Date();
+  const now = new Date();
 
-    const hours = pad(now.getHours());
-    const minutes = pad(now.getMinutes());
-    const seconds = pad(now.getSeconds());
+  const hourValue = now.getHours();
+  const hours = pad(hourValue);
+  const minutes = pad(now.getMinutes());
+  const seconds = pad(now.getSeconds());
 
-    /*
-      مثال: 19:42:37
+  const details: string[] = [];
 
-      عدد اول: 194
-      عدد دوم: 237
-    */
-    const firstNumber = Number(`${hours}${minutes[0]}`);
-    const secondNumber = Number(`${minutes[1]}${seconds}`);
+  details.push(`ساعت استخاره: ${formatTime(now)}`);
 
-    const sum = firstNumber + secondNumber;
-    const details: string[] = [];
+  /*
+    حالت عادی:
 
-    details.push(`ساعت استخاره: ${formatTime(now)}`);
-    details.push(`عدد اول: ${hours}${minutes[0]} = ${firstNumber}`);
-    details.push(`عدد دوم: ${minutes[1]}${seconds} = ${secondNumber}`);
+    مثال 19:42:37
+    عدد اول: 194
+    عدد دوم: 237
+  */
+  let firstNumber = Number(`${hours}${minutes[0]}`);
+  let secondNumber = Number(`${minutes[1]}${seconds}`);
+
+  /*
+    حالت ویژه:
+
+    اگر ساعت بین ۰ تا ۶ باشد و عدد ساخته‌شده
+    از یکان دقیقه و ثانیه بیشتر از ۶۰۴ باشد:
+
+    عدد اول = ساعت + کل دقیقه
+    عدد دوم = ثانیه
+  */
+  const useSpecialMode =
+    hourValue >= 0 &&
+    hourValue <= 5 &&
+    secondNumber > 604;
+
+  if (useSpecialMode) {
     details.push(
-      `جمع دو عدد: ${firstNumber} + ${secondNumber} = ${sum}`
+      `عدد یکان دقیقه و ثانیه در حالت عادی: ${minutes[1]}${seconds} = ${secondNumber}`
     );
 
-    let result: number;
+    details.push(
+      `چون ساعت بین ۰ تا ۵ و عدد ${secondNumber} بیشتر از ۶۰۴ است، حالت ویژه اجرا شد.`
+    );
 
-    if (sum <= 604) {
-      result = sum;
+    firstNumber = Number(`${hourValue}${minutes}`);
+    secondNumber = Number(seconds);
 
-      details.push('چون حاصل جمع از ۶۰۵ کمتر است، همان عدد انتخاب شد.');
-    } else {
-      result = Math.abs(firstNumber - secondNumber);
+    details.push(
+      `عدد اول از ساعت و دقیقه: ${hourValue}${minutes} = ${firstNumber}`
+    );
 
-      const smallerNumber = Math.min(firstNumber, secondNumber);
+    details.push(
+      `عدد دوم از ثانیه: ${seconds} = ${secondNumber}`
+    );
+  } else {
+    details.push(
+      `عدد اول از ساعت و دهگان دقیقه: ${hours}${minutes[0]} = ${firstNumber}`
+    );
 
-      details.push(
-        `چون حاصل جمع بیشتر از ۶۰۴ است، تفاضل محاسبه شد:`
-      );
+    details.push(
+      `عدد دوم از یکان دقیقه و ثانیه: ${minutes[1]}${seconds} = ${secondNumber}`
+    );
+  }
 
-      details.push(
-        `|${firstNumber} - ${secondNumber}| = ${result}`
-      );
+  const sum = firstNumber + secondNumber;
 
-      if (result > 604) {
-        if (smallerNumber > 0) {
-          details.push(
-            `عدد کوچک‌تر ${smallerNumber} است و از نتیجه کم می‌شود:`
-          );
+  details.push(
+    `جمع دو عدد: ${firstNumber} + ${secondNumber} = ${sum}`
+  );
 
-          while (result > 604) {
-            const previousResult = result;
+  let result: number;
 
-            result -= smallerNumber;
+  if (sum <= 604) {
+    result = sum;
 
-            details.push(
-              `${previousResult} - ${smallerNumber} = ${result}`
-            );
-          }
-        } else {
+    details.push(
+      'چون حاصل جمع از ۶۰۵ کمتر است، همان عدد انتخاب شد.'
+    );
+  } else {
+    result = Math.abs(firstNumber - secondNumber);
+
+    const smallerNumber = Math.min(
+      firstNumber,
+      secondNumber
+    );
+
+    details.push(
+      'چون حاصل جمع بیشتر از ۶۰۴ است، تفاضل دو عدد محاسبه شد.'
+    );
+
+    details.push(
+      `|${firstNumber} - ${secondNumber}| = ${result}`
+    );
+
+    if (result > 604) {
+      if (smallerNumber > 0) {
+        details.push(
+          `چون تفاضل بیشتر از ۶۰۴ است، عدد کوچک‌تر یعنی ${smallerNumber} از نتیجه کم می‌شود.`
+        );
+
+        while (result > 604) {
           const previousResult = result;
 
-          result = ((result - 1) % 604) + 1;
+          result -= smallerNumber;
 
           details.push(
-            `چون عدد کوچک‌تر صفر است، عدد ${previousResult} به بازه ۱ تا ۶۰۴ منتقل شد.`
+            `${previousResult} - ${smallerNumber} = ${result}`
           );
         }
+      } else {
+        const previousResult = result;
+
+        /*
+          اگر عدد کوچک‌تر صفر باشد، کم‌کردن صفر
+          نتیجه را تغییر نمی‌دهد و حلقه بی‌نهایت ایجاد می‌شود.
+        */
+        result = ((result - 1) % 604) + 1;
+
+        details.push(
+          `چون عدد کوچک‌تر صفر بود، عدد ${previousResult} به بازه ۱ تا ۶۰۴ منتقل شد.`
+        );
       }
     }
+  }
 
-    if (result === 0) {
-      result = 604;
-      details.push('چون نتیجه صفر شد، عدد ۶۰۴ انتخاب شد.');
-    }
+  if (result === 0) {
+    result = 604;
 
-    details.push(`عدد نهایی استخاره: ${result}`);
+    details.push(
+      'چون نتیجه صفر شد، عدد ۶۰۴ انتخاب شد.'
+    );
+  }
 
-    setRandomNumber(result);
-    setGeneratedTime(formatTime(now));
-    setCalculationDetails(details);
+  details.push(`عدد نهایی استخاره: ${result}`);
+
+  setRandomNumber(result);
+  setGeneratedTime(formatTime(now));
+  setCalculationDetails(details);
   }
 
   async function openQuranPage() {
